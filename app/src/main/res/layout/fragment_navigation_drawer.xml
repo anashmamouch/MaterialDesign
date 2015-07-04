@@ -1,20 +1,14 @@
-<org.lucasr.dspec.DesignSpecFrameLayout
 
+<RelativeLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
 
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-
-    app:designSpec="">
-<RelativeLayout
-
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
     android:background="#DADADA"
 
-    tools:context="com.benzino.materialdesign.NavigationDrawerFragment">
+    tools:context="com.benzino.materialdesign.fragments.NavigationDrawerFragment">
     <LinearLayout
         android:id= "@+id/container"
         android:layout_width="match_parent"
@@ -40,4 +34,3 @@
 
     </android.support.v7.widget.RecyclerView>
 </RelativeLayout>
-</org.lucasr.dspec.DesignSpecFrameLayout>

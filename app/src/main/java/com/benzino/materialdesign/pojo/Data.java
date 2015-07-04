@@ -1,4 +1,4 @@
-package com.benzino.materialdesign;
+package com.benzino.materialdesign.pojo;
 
 /**
  * Created by Anas on 25/06/2015.
