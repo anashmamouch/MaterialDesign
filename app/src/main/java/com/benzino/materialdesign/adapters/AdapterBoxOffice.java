@@ -18,7 +18,10 @@ import com.benzino.materialdesign.pojo.Movie;
 
 import org.w3c.dom.Text;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 
 /**
  * Created by Anas on 04/07/2015.
@@ -29,6 +32,7 @@ public class AdapterBoxOffice extends RecyclerView.Adapter<AdapterBoxOffice.View
     private LayoutInflater layoutInflater;
     private VolleySingelton singelton;
     private ImageLoader imageLoader;
+    private DateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 
     public AdapterBoxOffice(Context context){
         layoutInflater = LayoutInflater.from(context);
@@ -52,16 +56,43 @@ public class AdapterBoxOffice extends RecyclerView.Adapter<AdapterBoxOffice.View
     public void onBindViewHolder(final ViewHolderBoxOffice holder, int position) {
         Movie movie = listMovies.get(position);
         holder.movieTitle.setText(movie.getTitle());
-        holder.movieReleaseDate.setText(movie.getReleaseDate().toString());
-        holder.movieAudienceScore.setRating(movie.getScore()/20.0F);
+        Date date = movie.getReleaseDate();
+        if(date != null){
+            String FormatedDate = dateFormatter.format(date);
+            holder.movieReleaseDate.setText(FormatedDate);
+        }else{
+            holder.movieReleaseDate.setText("NA");
+        }
+        int score = movie.getScore() ;
+        if(score == -1){
+            holder.movieAudienceScore.setRating(0.0F);
+        }else{
+            holder.movieAudienceScore.setRating(movie.getScore() / 20.0F);
+        }
+
         String urlThumbnail = movie.getUrlThumbnail();
-        if(urlThumbnail != null){
+        if (urlThumbnail != null) {
             imageLoader.get(urlThumbnail, new ImageLoader.ImageListener() {
                 @Override
                 public void onResponse(ImageLoader.ImageContainer response, boolean isImmediate) {
                     holder.movieThumbnail.setImageBitmap(response.getBitmap());
                 }
 
+                @Override
+                public void onErrorResponse(VolleyError error) {
+
+                }
+            });
+        }
+    }
+
+    private void loadImages(String urlThumbnail, final ViewHolderBoxOffice holder){
+        if(!urlThumbnail.equals("NA")){
+            imageLoader.get(urlThumbnail, new ImageLoader.ImageListener() {
+                @Override
+                public void onResponse(ImageLoader.ImageContainer response, boolean isImmediate) {
+                    holder.movieThumbnail.setImageBitmap(response.getBitmap());
+                }
                 @Override
                 public void onErrorResponse(VolleyError error) {
 

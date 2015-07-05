@@ -11,7 +11,12 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="drawer_open">Open</string>
     <string name="drawer_close">Close</string>
-    
+    <string name="error_timeout">The connection could not be establisher</string>
+    <string name="error_authFailure">The connection could not be established</string>
+    <string name="error_server">The connection could not be established</string>
+    <string name="error_network">The connection could not be established</string>
+    <string name="error_parse">The connection could not be established</string>
+
     <string-array name="tabs">
         <item>TAB 1</item>
         <item>TAB 2</item>

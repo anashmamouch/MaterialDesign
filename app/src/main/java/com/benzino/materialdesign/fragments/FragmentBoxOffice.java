@@ -10,10 +10,17 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
+import com.android.volley.AuthFailureError;
+import com.android.volley.NetworkError;
+import com.android.volley.NoConnectionError;
+import com.android.volley.ParseError;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
+import com.android.volley.ServerError;
+import com.android.volley.TimeoutError;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.JsonObjectRequest;
@@ -55,18 +62,8 @@ public class FragmentBoxOffice extends Fragment {
     private ArrayList<Movie> listMovies = new ArrayList<>();
     private DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
     private RecyclerView listMovieHits;
+    private TextView textVolleyError;
 
-
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment FragmentBoxOffice.
-     */
-    // TODO: Rename and change types and number of parameters
     public static FragmentBoxOffice newInstance(String param1, String param2) {
         FragmentBoxOffice fragment = new FragmentBoxOffice();
         Bundle args = new Bundle();
@@ -93,32 +90,25 @@ public class FragmentBoxOffice extends Fragment {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
-
-        singelton = VolleySingelton.getInstance();
-        requestQueue = VolleySingelton.getRequestQueue();
-
-        sendJSONRequest();
-
-
-    }
+     }
 
     private void sendJSONRequest(){
-
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET,
                 getRequestUrl(10),
                 (String)null,
                 new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
+                        textVolleyError.setVisibility(View.GONE);
                         listMovies =  parseJSONResponse(response);
                         adapterBoxOffice.setListMovies(listMovies);
                     }
                 },new Response.ErrorListener(){
 
-            @Override
-            public void onErrorResponse(VolleyError error) {
-                L.t(getActivity(), error.toString());
-            }
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+                        handleVolleyError(error);
+                    }
         });
 
         requestQueue.add(request);
@@ -131,36 +121,52 @@ public class FragmentBoxOffice extends Fragment {
             try {
                 JSONArray array = response.getJSONArray(KEY_MOVIES);
                 for (int i = 0; i < array.length(); i++) {
+                    long id = 0 ;
+                    String title = "NA";
+                    String theater = "NA";
+                    int score = -1;
+                    String synopsis = "NA";
+                    String urlThumbnail  ="NA";
+
                     JSONObject movieJSON = array.getJSONObject(i);
 
-                    Long id = movieJSON.getLong(KEY_ID);
+                    if(movieJSON.has(KEY_ID) && !movieJSON.isNull(KEY_ID))
+                        id = movieJSON.getLong(KEY_ID);
 
-                    String title = movieJSON.getString(KEY_TITLE);
+                    if(movieJSON.has(KEY_TITLE) && !movieJSON.isNull(KEY_TITLE))
+                        title = movieJSON.getString(KEY_TITLE);
 
-                    JSONObject releaseDates = movieJSON.getJSONObject(KEY_RELEASE_DATES);
-                    String theater = null;
-                    if (releaseDates.has(KEY_THEATER)) {
-                        theater = releaseDates.getString(KEY_THEATER);
-                    } else {
-                        theater = "NA";
+                    if(movieJSON.has(KEY_RELEASE_DATES) && !movieJSON.isNull(KEY_RELEASE_DATES)){
+                        JSONObject releaseDates = movieJSON.getJSONObject(KEY_RELEASE_DATES);
+
+                        if(releaseDates !=null && releaseDates.has(KEY_THEATER) && !releaseDates.isNull(KEY_THEATER))
+                            theater = releaseDates.getString(KEY_THEATER);
                     }
 
-                    String synopsis = movieJSON.getString(KEY_SYNOPSIS);
+                    if(movieJSON.has(KEY_SYNOPSIS) && !movieJSON.isNull(KEY_SYNOPSIS))
+                        synopsis = movieJSON.getString(KEY_SYNOPSIS);
 
-                    JSONObject ratings = movieJSON.getJSONObject(KEY_RATINGS);
-                    int score = -1;
-                    if (ratings.has(KEY_SCORE)) {
-                        score = ratings.getInt(KEY_SCORE);
+                    if(movieJSON.has(KEY_RATINGS) && !movieJSON.isNull(KEY_RATINGS)){
+                        JSONObject ratings = movieJSON.getJSONObject(KEY_RATINGS);
+
+                        if(ratings !=null && ratings.has(KEY_SCORE) && !ratings.isNull(KEY_SCORE))
+                            score = ratings.getInt(KEY_SCORE);
                     }
 
-                    JSONObject posters = movieJSON.getJSONObject(KEY_POSTERS);
-                    String urlThumbnail = null;
-                    if (posters.has(KEY_THUMBNAIL)) {
-                        urlThumbnail = posters.getString(KEY_THUMBNAIL);
+                    if(movieJSON.has(KEY_POSTERS) && !movieJSON.isNull(KEY_POSTERS)){
+                        JSONObject posters = movieJSON.getJSONObject(KEY_POSTERS);
+
+                        if (posters != null && posters.has(KEY_THUMBNAIL) && !posters.isNull(KEY_THUMBNAIL))
+                            urlThumbnail = posters.getString(KEY_THUMBNAIL);
                     }
 
                     Movie movie = new Movie();
-                    Date date = dateFormat.parse(theater);
+                    Date date = null ;
+                    try {
+                        date = dateFormat.parse(theater);
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                    }
 
                     movie.setId(id);
                     movie.setTitle(title);
@@ -169,25 +175,41 @@ public class FragmentBoxOffice extends Fragment {
                     movie.setSynopsis(synopsis);
                     movie.setUrlThumbnail(urlThumbnail);
 
-                    listMovies.add(movie);
+                    if(id != -1 && title.equals("NA"))
+                        listMovies.add(movie);
 
                 }
 
 
             } catch (JSONException e) {
                 e.printStackTrace();
-            } catch (ParseException e) {
-                e.printStackTrace();
             }
         }
 
         return listMovies;
+    }
+
+    private void handleVolleyError(VolleyError error){
+        textVolleyError.setVisibility(View.VISIBLE);
+
+        if(error instanceof TimeoutError || error instanceof NoConnectionError){
+            textVolleyError.setText(R.string.error_timeout);
+        }else if(error instanceof AuthFailureError){
+            textVolleyError.setText(R.string.error_authFailure);
+        }else if(error instanceof ServerError){
+            textVolleyError.setText(R.string.error_server);
+        }else if(error instanceof NetworkError){
+            textVolleyError.setText(R.string.error_network);
+        }else if(error instanceof ParseError){
+            textVolleyError.setText(R.string.error_parse);
+        }
     }
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_box_office, container, false);
+        textVolleyError = (TextView) view.findViewById(R.id.textVolleyError);
         listMovieHits = (RecyclerView) view.findViewById(R.id.listMovieHits);
         listMovieHits.setLayoutManager(new LinearLayoutManager(getActivity()));
         adapterBoxOffice = new AdapterBoxOffice(getActivity());
